@@ -3,7 +3,7 @@ from typing import Callable
 import random
 import tkinter as tk
 import sys
-import glob
+import os
 
 width, height, step = [float(i) for i in sys.argv[1:4]]
 width, height = int(width), int(height)
@@ -18,9 +18,6 @@ def number_to_hex(n):
 
 def progress_bar(percent):
     return "▒" * int(percent // step) + "░" * int(100 // step - percent // step)
-
-
-
 
 
 def pure_random(*args):
@@ -78,7 +75,7 @@ def join(x, y, f: Callable, g: Callable, **kwargs):
     return f(x, y, *kwargs["f_args"]) + g(x, y, *kwargs["g_args"])
 
 
-def magnify(x, y, f: Callable, z, *args, **kwargs):
+def multiply(x, y, f: Callable, z, *args, **kwargs):
     return f(x, y, *args, **kwargs) * z
 
 
@@ -125,12 +122,19 @@ def unpack_args(iterable):
 
 
 def log_plot(*args, **kwargs):
-    plot(*args, **kwargs)
+    global img
+    t_args = args
     args = list(args)
     args.append(kwargs)
     name = unpack_args(args)
-
-    img.write(f"{name}.png", format='png')
+    path = f"{os.path.dirname(os.path.abspath(__file__))}\\{name}.png"
+    if os.path.isfile(path):
+        img = tk.PhotoImage(file=path)
+        canvas.create_image((width // 2, height // 2), image=img, state="normal")
+        canvas.pack()
+    else:
+        plot(*t_args, **kwargs)
+        img.write(f"{name}.png", format='png')
 
 
 if __name__ == "__main__":
