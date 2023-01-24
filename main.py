@@ -5,7 +5,8 @@ import tkinter as tk
 import sys
 import glob
 
-width, height, step = [int(i) for i in sys.argv[1:]]
+width, height, step = [float(i) for i in sys.argv[1:4]]
+width, height = int(width), int(height)
 max_hex = 16581375
 
 
@@ -19,13 +20,7 @@ def progress_bar(percent):
     return "▒" * int(percent // step) + "░" * int(100 // step - percent // step)
 
 
-root = tk.Tk()
-canvas = tk.Canvas(root, width=width, height=height, bg="black")
 
-img = tk.PhotoImage(width=width, height=height)
-canvas.create_image((width//2, height//2), image=img, state="normal")
-
-canvas.pack()
 
 
 def pure_random(*args):
@@ -96,14 +91,56 @@ def plot(f: Callable, *args, **kwargs):
                 img.put(number_to_hex(max_hex), (x, y))
             prog = (x*height + y) / width / height * 100
             print(f"{progress_bar(prog)} {str(int(prog))}%", end="\r")
-    print("▓" * (100 // step) + " 100%")
+    print("▓" * int(100 // step) + " 100%")
 
 
-plot(centre, zoom, 100, join, magnify, magnify, f_args=[double_square, 10], g_args=[quadratic, 4, 1, 2, 1])
+def unpack_args(iterable):
+    name = ""
+    if isinstance(iterable, str):
+        return iterable
+    if isinstance(iterable, list):
+        name += "["
+    for arg in iterable:
+        match arg:
+            case list():
+                name += "["
+                name += unpack_args(arg)
+                name += "]"
+            case dict():
+                name += "{"
+                for k, v in arg.items():
+                    name += f"{unpack_args(k)} : {unpack_args(v)}"
+                name += "}"
+            case _:
+                if callable(arg):
+                    name += arg.__name__
+                else:
+                    name += repr(arg)
+        name += ", "
+    if isinstance(iterable, list):
+        name += "]"
 
-img.write(f"{len(glob.glob('*render.png'))}render.png", format='png')
+    name += f" {width}px x {height}px"
+    return name
 
-root.mainloop()
+
+def log_plot(*args, **kwargs):
+    plot(*args, **kwargs)
+    args = list(args)
+    args.append(kwargs)
+    name = unpack_args(args)
+
+    img.write(f"{name}.png", format='png')
+
 
 if __name__ == "__main__":
-    pass
+    root = tk.Tk()
+    canvas = tk.Canvas(root, width=width, height=height, bg="black")
+
+    img = tk.PhotoImage(width=width, height=height)
+    canvas.create_image((width // 2, height // 2), image=img, state="normal")
+    canvas.pack()
+
+    exec(f"log_plot({','.join(sys.argv[4:])})")
+
+    root.mainloop()
