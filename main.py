@@ -7,7 +7,7 @@ import os
 
 width, height, step = [float(i) for i in sys.argv[1:4]]
 width, height = int(width), int(height)
-max_hex = 16581375
+max_hex = 256**3
 
 
 def number_to_hex(n):
@@ -51,6 +51,10 @@ def quadratic(x, y, a, b, c):
     return a * (x ** 2) + b * x + c
 
 
+def quadratic_y(x, y, a, b, c):
+    return a * (y ** 2) + b * y + c
+
+
 def plot_normalised_thing(x, y):
     return max_hex - max_hex / (math.cos(x) + math.sin(y))
 
@@ -67,6 +71,18 @@ def centre_y(x, y, f: Callable, *args, **kwargs):
     return f(x, y - height//2, *args, **kwargs)
 
 
+def quadratic_s(x, y, a, b, c):
+    return a * (x ** 2) + b * x + c + y
+
+
+def quadratic_p(*args):
+    return (quadratic_s(*args) == 0) * (max_hex - 1)
+
+
+def flip_y(x, y, f: Callable, *args, **kwargs):
+    return f(x, -y, *args, **kwargs)
+
+
 def double_square(x, y):
     return max_hex / (x ** 2 + y ** 2)
 
@@ -79,13 +95,38 @@ def multiply(x, y, f: Callable, z, *args, **kwargs):
     return f(x, y, *args, **kwargs) * z
 
 
+def normalise_y(x, y, f: Callable, *args, **kwargs):
+    pass
+
+
+def sine(x, y, g):
+    if math.sin(x) - y in range(-g, g):
+        return max_hex - 1
+    else:
+        return 0
+
+
+def grayscale(x, y, f: Callable, *args, **kwargs):
+    a = number_to_hex(f(x, y, *args, **kwargs))
+    r, g, b = a[1:3], a[3:5], a[5:7]
+    r, g, b = int(r, 16), int(g, 16), int(b, 16)
+    return int(hex(min(255, (r+g+b)//3 + 1))[2:] * 3, 16)
+
+
+def circle(x, y, r, w):
+    if x**2 + y**2 in range(r**2 - w, r**2 + w):
+        return max_hex - 1
+    else:
+        return 0
+
+
 def plot(f: Callable, *args, **kwargs):
     for x in range(width):
         for y in range(height):
             try:
                 img.put(number_to_hex(f(x, y, *args, **kwargs)), (x, y))
             except ZeroDivisionError:
-                img.put(number_to_hex(max_hex), (x, y))
+                img.put(number_to_hex(max_hex - 1), (x, y))
             prog = (x*height + y) / width / height * 100
             print(f"{progress_bar(prog)} {str(int(prog))}%", end="\r")
     print("▓" * int(100 // step) + " 100%")
